@@ -49,6 +49,7 @@ SOFTWARE.
 import tensorflow as tf
 import tensorflow.keras as keras
 from lib import despawnLayers as impLay
+import pdb
 
 def createDeSpaWN(inputSize=None, kernelInit=8, kernTrainable=True, level=1, lossCoeff='l1', kernelsConstraint='QMF', initHT=1.0, trainHT=True):
     """

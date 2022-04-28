@@ -53,16 +53,20 @@ import tensorflow as tf # designed with 2.1.0 /!\ models output changes with tf>
 import tensorflow.keras as keras
 
 from lib import despawn
+import pdb
 
 
 # Load a toy time series data to run DeSPAWN
 signal = pd.read_csv("monthly-sunspots.csv")
-lTrain = 2000 # length of the training section
+lTrain = 240 # length of the training section
 signalT = ((signal['Sunspots']-signal['Sunspots'].mean())/signal['Sunspots'].std()).values[np.newaxis,:,np.newaxis,np.newaxis]
 signal = signalT[:,:lTrain,:,:]
+signal = np.concatenate((signal,signal,signal,signal), axis=0)
+#pdb.set_trace()
 
 # Number of decomposition level is max log2 of input TS
 level = np.floor(np.log2(signal.shape[1])).astype(int)
+print(f'Decomposition Level {level}')
 # Train hard thresholding (HT) coefficient?
 trainHT = True
 # Initialise HT value
@@ -105,6 +109,7 @@ opt = keras.optimizers.Nadam(learning_rate=0.001, beta_1=0.9, beta_2=0.999, epsi
 # For the training we only use model1
 model1.compile(optimizer=opt, loss=[recLoss, coeffLoss])
 # the sparsity term has no ground truth => just input an empty numpy array as ground truth (anything would do, in coeffLoss, yTrue is not called)
+pdb.set_trace()
 H = model1.fit(signal,[signal,np.empty((signal.shape[0]))], epochs=epochs, verbose=verbose)
 
 # Examples for plotting the model outputs and learnings
@@ -114,7 +119,6 @@ outC = model2.predict(signal)
 # Test part of the signal
 outTe  = model1.predict(signalT[:,lTrain:,:,:])
 outCTe = model2.predict(signalT[:,lTrain:,:,:])
-
 fig = plt.figure(1)
 fig.clf()
 ax = fig.add_subplot(2,1,1)
@@ -127,6 +131,7 @@ ax = fig.add_subplot(2,2,3)
 idpl = 0
 for e,o in enumerate(outC[1:]):
     ax.boxplot(np.abs(np.squeeze(o[indPlot,:,:,:])), positions=[e], widths=0.8)
+
 ax.set_xlabel('Decomposition Level')
 ax.set_ylabel('Coefficient Distribution')
 trainYLim = ax.get_ylim()
@@ -134,7 +139,6 @@ trainXLim = ax.get_xlim()
 ax = fig.add_subplot(2,2,4)
 idpl = 0
 for e,o in enumerate(outCTe[1:]):
-    print(o.shape[1])
     if o.shape[1]>1:
         ax.boxplot(np.abs(np.squeeze(o[indPlot,:,:,:])), positions=[e], widths=0.8)
     else:
@@ -143,3 +147,4 @@ ax.set_xlabel('Decomposition Level')
 ax.set_ylabel('Coefficient Distribution')
 ax.set_ylim(trainYLim)
 ax.set_xlim(trainXLim)
+plt.savefig('Results.jpg')
